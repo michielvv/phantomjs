@@ -279,6 +279,8 @@ QNetworkReply *NetworkAccessManager::createRequest(Operation op, const QNetworkR
     connect(reply, SIGNAL(sslErrors(const QList<QSslError> &)), this, SLOT(handleSslErrors(const QList<QSslError> &)));
     connect(reply, SIGNAL(error(QNetworkReply::NetworkError)), this, SLOT(handleNetworkError()));
 
+    connect(reply, SIGNAL(downloadProgress(qint64,qint64)), this, SLOT(handleDownloadProgress(qint64,qint64)));
+
     return reply;
 }
 
@@ -296,6 +298,16 @@ void NetworkAccessManager::handleTimeout()
 
     // Abort the reply that we attached to the Network Timeout
     nt->reply->abort();
+}
+
+void NetworkAccessManager::handleDownloadProgress(qint64 bytesReceived, qint64 bytesTotal)
+{
+    QNetworkReply *reply = qobject_cast<QNetworkReply*>(sender());
+    if (!reply)
+        return;
+    
+    m_replyBytesTotals[reply] = bytesTotal;
+
 }
 
 void NetworkAccessManager::handleStarted()
@@ -377,8 +389,10 @@ void NetworkAccessManager::handleFinished(QNetworkReply *reply, const QVariant &
     data["redirectURL"] = reply->header(QNetworkRequest::LocationHeader);
     data["headers"] = headers;
     data["time"] = QDateTime::currentDateTime();
+    data["downloadBytes"] = m_replyBytesTotals.value(reply);
 
     m_ids.remove(reply);
+    m_replyBytesTotals.remove(reply);
     m_started.remove(reply);
 
     emit resourceReceived(data);

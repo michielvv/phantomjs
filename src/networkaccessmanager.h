@@ -104,10 +104,12 @@ private slots:
     void handleSslErrors(const QList<QSslError> &errors);
     void handleNetworkError();
     void handleTimeout();
+    void handleDownloadProgress(qint64, qint64);
 
 private:
     QHash<QNetworkReply*, int> m_ids;
     QSet<QNetworkReply*> m_started;
+    QHash<QNetworkReply*, qint64> m_replyBytesTotals;
     int m_idCounter;
     QNetworkDiskCache* m_networkDiskCache;
     QVariantMap m_customHeaders;
